@@ -24,7 +24,7 @@ def build():
     # Just the wordmark — Telegram/WhatsApp/etc. already render og:title and
     # og:description as their own text next to this image, so repeating the
     # tagline/credit here just duplicates what the platform already shows.
-    text = ar("لُقْمَة")
+    text = ar("لقمة")
     title_font = ImageFont.truetype(os.path.join(FONTS, "tahomabd.ttf"), 220)
     bbox = draw.textbbox((0, 0), text, font=title_font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]

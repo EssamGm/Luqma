@@ -24,7 +24,7 @@ def draw_master():
     img = Image.new("RGB", (SIZE, SIZE), BG)
     draw = ImageDraw.Draw(img)
 
-    text = ar("لُقْمَة")
+    text = ar("لقمة")
     font = ImageFont.truetype(os.path.join(FONTS, "tahomabd.ttf"), 340)
     bbox = draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
