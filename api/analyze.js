@@ -2,20 +2,25 @@ var ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 var MODEL = "claude-opus-5";
 
 var PROMPT_AR =
-  "انظر إلى صورة هذه الوجبة بعناية. حدّد اسم الطبق أو الوجبة بالعربية الفصحى بإيجاز، " +
-  "وقدّر السعرات الحرارية، والبروتين، والكربوهيدرات، والدهون بالجرام كأفضل تقدير ممكن " +
-  "كأعداد صحيحة. حدّد مستوى ثقتك بصدق (low أو medium أو high) حسب وضوح الصورة وقابلية " +
-  "التعرف على مكونات الوجبة. ثم اكتب نصيحة عملية قصيرة ومباشرة (جملة أو جملتين) خاصة بهذه " +
-  "الوجبة تحديداً بناءً على تركيبتها الغذائية — لا داعي للتحذيرات الطبية المبالغ فيها، فهذا " +
-  "معروف للمستخدم مسبقاً.";
+  "انظر إلى هذه الصورة بعناية. أولاً حدّد: هل تُظهر الصورة وجبة طعام حقيقية أو طبقاً " +
+  "يمكن تحليله غذائياً؟ إذا لم تكن الصورة لطعام على الإطلاق (مثل صورة لجهاز، أو مكان، أو " +
+  "شخص، أو أي شيء آخر لا عَلاقة له بالأكل)، اجعل is_food = false، واترك الحقول الرقمية " +
+  "صفراً، ولا تحاول اختلاق وجبة غير موجودة.\n\n" +
+  "إذا كانت الصورة تُظهر طعاماً فعلاً، اجعل is_food = true، ثم: حدّد اسم الطبق أو الوجبة " +
+  "بالعربية الفصحى بإيجاز، وقدّر السعرات الحرارية، والبروتين، والكربوهيدرات، والدهون " +
+  "بالجرام كأفضل تقدير ممكن كأعداد صحيحة. حدّد مستوى ثقتك بصدق (low أو medium أو high) " +
+  "حسب وضوح الصورة وقابلية التعرف على مكونات الوجبة. ثم اكتب نصيحة عملية قصيرة ومباشرة " +
+  "(جملة أو جملتين) خاصة بهذه الوجبة تحديداً بناءً على تركيبتها الغذائية — لا داعي " +
+  "للتحذيرات الطبية المبالغ فيها، فهذا معروف للمستخدم مسبقاً.";
 
 var TOOL = {
   name: "record_meal_analysis",
-  description: "سجّل نتيجة تحليل الوجبة الغذائية بصيغة منظمة",
+  description: "سجّل نتيجة تحليل الصورة بصيغة منظمة",
   strict: true,
   input_schema: {
     type: "object",
     properties: {
+      is_food: { type: "boolean", description: "هل تُظهر الصورة طعاماً يمكن تحليله؟" },
       dish_name_ar: { type: "string", description: "اسم الطبق أو الوجبة بالعربية الفصحى" },
       calories: { type: "integer" },
       protein_g: { type: "integer" },
@@ -24,7 +29,7 @@ var TOOL = {
       confidence: { type: "string", enum: ["low", "medium", "high"] },
       advice_ar: { type: "string", description: "نصيحة عملية قصيرة ومباشرة بالعربية الفصحى" }
     },
-    required: ["dish_name_ar", "calories", "protein_g", "carbs_g", "fat_g", "confidence", "advice_ar"],
+    required: ["is_food", "dish_name_ar", "calories", "protein_g", "carbs_g", "fat_g", "confidence", "advice_ar"],
     additionalProperties: false
   }
 };
@@ -119,6 +124,12 @@ module.exports = async function (req, res) {
   }
 
   var input = toolUse.input;
+
+  if (input.is_food === false) {
+    res.status(200).json({ ok: false, errorAr: "لم يتم التعرف على وجبة طعام في هذه الصورة. صوّر طبق الطعام بوضوح." });
+    return;
+  }
+
   res.status(200).json({
     ok: true,
     dishNameAr: input.dish_name_ar,

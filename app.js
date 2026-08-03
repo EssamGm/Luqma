@@ -130,7 +130,11 @@
   var summaryText = document.getElementById("summaryText");
   var summaryError = document.getElementById("summaryError");
 
-  var CONFIDENCE_LABEL = { high: "ثقة عالية", medium: "ثقة متوسطة", low: "ثقة منخفضة — تقدير تقريبي" };
+  var CONFIDENCE_LABEL = {
+    high: "مستوى ثقة لُقْمَة في دقة التحليل: عالية",
+    medium: "مستوى ثقة لُقْمَة في دقة التحليل: متوسطة",
+    low: "مستوى ثقة لُقْمَة في دقة التحليل: منخفضة — تقدير تقريبي فقط"
+  };
 
   var busy = false;
   var lastFile = null;
@@ -213,9 +217,7 @@
           thumbnail: thumbDataUrl
         };
 
-        renderResult(record);
-        scanRow.hidden = true;
-        result.hidden = false;
+        showResult(record);
 
         return addMeal(record).then(refreshLog);
       })
@@ -229,6 +231,20 @@
   }
 
   function pad(n) { return n < 10 ? "0" + n : String(n); }
+
+  function showResult(m) {
+    stage.hidden = false;
+    scanRow.hidden = true;
+    errorBox.hidden = true;
+    renderResult(m);
+    result.hidden = false;
+  }
+
+  function openMealDetail(m) {
+    lastFile = null;
+    showResult(m);
+    stage.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function renderResult(m) {
     resultThumb.src = m.thumbnail;
@@ -313,6 +329,13 @@
   function buildMealRow(m) {
     var row = document.createElement("div");
     row.className = "meal-row";
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.setAttribute("aria-label", "عرض تفاصيل " + m.dishNameAr);
+    row.addEventListener("click", function () { openMealDetail(m); });
+    row.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMealDetail(m); }
+    });
 
     var img = document.createElement("img");
     img.src = m.thumbnail;
