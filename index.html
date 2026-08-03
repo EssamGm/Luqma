@@ -1,0 +1,131 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>لُقْمَة</title>
+<meta name="description" content="صوّر وجبتك، واعرف ما فيها من سعرات وعناصر غذائية، مع نصيحة سريعة لكل وجبة." />
+<meta name="theme-color" content="#f5f6f1" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14160f" media="(prefers-color-scheme: dark)" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="لُقْمَة" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="icon" href="/icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="badge" id="offlineBadge" hidden>لا يوجد اتصال بالإنترنت</div>
+    <h1>لُقْمَة</h1>
+    <p class="tagline">صوّر وجبتك، وتعرّف على ما فيها من سعرات وعناصر غذائية، مع نصيحة سريعة.</p>
+  </header>
+
+  <main>
+    <section class="capture-card">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" hidden />
+      <button type="button" class="capture-btn" id="captureBtn">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path>
+          <circle cx="12" cy="14" r="3.5"></circle>
+        </svg>
+        <span>صوّر وجبتك</span>
+      </button>
+      <p class="capture-hint" id="captureHint">اضغط لالتقاط صورة الوجبة</p>
+    </section>
+
+    <section class="stage" id="stage" hidden aria-live="polite">
+      <div class="scan-row" id="scanRow">
+        <div class="scan-thumb-wrap">
+          <img id="scanThumb" alt="" />
+          <div class="scan-sweep"></div>
+        </div>
+        <p class="scan-label">جارٍ تحليل الوجبة…</p>
+      </div>
+
+      <div class="result" id="result" hidden>
+        <div class="result-head">
+          <img id="resultThumb" alt="" class="result-thumb" />
+          <div class="result-title">
+            <h2 id="resultName"></h2>
+            <span id="resultConfidence" class="confidence-note"></span>
+          </div>
+        </div>
+
+        <div class="facts">
+          <div class="facts-title">القيمة الغذائية</div>
+          <div class="facts-sub">تقدير تقريبي</div>
+          <hr />
+          <div class="cal-row">
+            <span class="label">السعرات الحرارية</span>
+            <span class="value"><span id="factCalories"></span> <small>سعرة</small></span>
+          </div>
+          <hr class="thin" />
+          <div class="macro-row">
+            <span class="name">البروتين</span>
+            <div class="macro-bar"><div id="barProtein" class="bar-fill protein"></div></div>
+            <span class="amount"><span id="valProtein"></span> غ</span>
+          </div>
+          <div class="macro-row">
+            <span class="name">الكربوهيدرات</span>
+            <div class="macro-bar"><div id="barCarbs" class="bar-fill carbs"></div></div>
+            <span class="amount"><span id="valCarbs"></span> غ</span>
+          </div>
+          <div class="macro-row">
+            <span class="name">الدهون</span>
+            <div class="macro-bar"><div id="barFat" class="bar-fill fat"></div></div>
+            <span class="amount"><span id="valFat"></span> غ</span>
+          </div>
+        </div>
+
+        <div class="coach">
+          <strong>نصيحة سريعة —</strong>
+          <span id="coachText"></span>
+        </div>
+
+        <button type="button" class="again-btn" id="againBtn">صوّر وجبة أخرى</button>
+      </div>
+
+      <div class="error-box" id="errorBox" hidden>
+        <p id="errorText"></p>
+        <button type="button" class="again-btn" id="errorRetryBtn">حاول مرة أخرى</button>
+      </div>
+    </section>
+
+    <section class="log-section">
+      <div class="log-head">
+        <h2>سجل وجباتك</h2>
+        <button type="button" class="summary-btn" id="summaryBtn" hidden>تحليل شامل لنظامك الغذائي</button>
+      </div>
+      <p class="log-empty" id="logEmpty">لم تُسجَّل أي وجبة بعد. ابدأ بتصوير أول وجبة لك.</p>
+      <div id="logDays"></div>
+    </section>
+
+    <section class="summary-card" id="summaryCard" hidden>
+      <h2>تقييم شامل</h2>
+      <div class="summary-loading" id="summaryLoading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <p class="summary-text" id="summaryText" hidden></p>
+      <p class="error-box inline" id="summaryError" hidden></p>
+    </section>
+  </main>
+
+  <footer>
+    <p class="credit">صمّمه عصام بالتعاون مع Claude</p>
+    <p>هذا التطبيق للتجربة والمتعة، والتقديرات تقريبية وليست استشارة طبية أو غذائية.</p>
+    <p class="privacy">الصور تُحلَّل ولا تُخزَّن على خوادمنا.</p>
+    <p class="install-hint">📱 لإضافة التطبيق لشاشتك الرئيسية: في الآيفون اضغط زر المشاركة في Safari ثم "إضافة إلى الشاشة الرئيسية". في الأندرويد قد يظهر إشعار تثبيت تلقائي، أو افتح قائمة المتصفح واختر "تثبيت التطبيق".</p>
+    <p class="hook">جرّب لُقْمَة لعدة أيام، ثم اكتشف ما يمكن أن يقدّمه Claude لك مباشرةً في claude.ai.</p>
+  </footer>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
