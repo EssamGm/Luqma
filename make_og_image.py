@@ -12,40 +12,16 @@ BG = (226, 169, 58)
 CARD = (255, 255, 255)
 INK = (32, 36, 29)
 INK_DIM = (91, 99, 85)
-LEAF = (63, 143, 95)
+
+reshaper = arabic_reshaper.ArabicReshaper(configuration={"delete_harakat": False})
 
 
 def ar(text):
-    return get_display(arabic_reshaper.reshape(text))
+    return get_display(reshaper.reshape(text))
 
 
 def font(path, size):
     return ImageFont.truetype(os.path.join(FONTS, path), size)
-
-
-def draw_apple(img, cx, cy, r):
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=BG)
-
-    notch_r = int(r * 0.3)
-    draw.ellipse([cx - int(r*0.5) - notch_r, cy - r - int(r*0.07), cx - int(r*0.5) + notch_r, cy - r - int(r*0.07) + notch_r * 2], fill=CARD)
-    draw.ellipse([cx + int(r*0.13) - notch_r, cy - r - int(r*0.07), cx + int(r*0.13) + notch_r, cy - r - int(r*0.07) + notch_r * 2], fill=CARD)
-
-    bite_r = int(r * 0.57)
-    bcx, bcy = cx + r - int(r*0.13), cy - r + int(r*0.3)
-    draw.ellipse([bcx - bite_r, bcy - bite_r, bcx + bite_r, bcy + bite_r], fill=CARD)
-
-    stem_w, stem_h = int(r*0.11), int(r*0.43)
-    scx = cx - int(r*0.18)
-    stem_top = cy - r - int(r*0.23)
-    draw.rounded_rectangle([scx - stem_w // 2, stem_top, scx + stem_w // 2, stem_top + stem_h], radius=stem_w // 2, fill=BG)
-
-    leaf_w, leaf_h = int(r*0.8), int(r*0.53)
-    leaf = Image.new("RGBA", (leaf_w, leaf_h), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(leaf)
-    ld.ellipse([0, 0, leaf_w, leaf_h], fill=LEAF)
-    leaf = leaf.rotate(28, expand=True, resample=Image.BICUBIC)
-    img.paste(leaf, (int(cx - r*0.07), int(stem_top - r*0.32)), leaf)
 
 
 def build():
@@ -56,30 +32,29 @@ def build():
     img.paste(card, (margin, margin))
     draw = ImageDraw.Draw(img)
 
-    # apple mark, top-right area (RTL "start" side)
-    draw_apple(img, W - margin - 150, margin + 160, 110)
-
-    title_font = font("tahomabd.ttf", 108)
-    tagline_font = font("tahoma.ttf", 42)
-    credit_font = font("tahomabd.ttf", 34)
+    title_font = font("tahomabd.ttf", 130)
+    tagline_font = font("tahoma.ttf", 44)
+    credit_font = font("tahomabd.ttf", 36)
 
     title = ar("لُقْمَة")
     tagline = ar("صوّر وجبتك، واعرف ما فيها من سعرات وعناصر غذائية")
     credit = ar("من عصام بالتعاون مع كلود")
 
-    right_edge = W - margin - 80
+    right_edge = W - margin - 90
 
     tb = draw.textbbox((0, 0), title, font=title_font)
-    draw.text((right_edge - (tb[2] - tb[0]), 250), title, font=title_font, fill=INK)
+    title_y = 175
+    draw.text((right_edge - (tb[2] - tb[0]), title_y - tb[1]), title, font=title_font, fill=INK)
 
     tb2 = draw.textbbox((0, 0), tagline, font=tagline_font)
-    draw.text((right_edge - (tb2[2] - tb2[0]), 400), tagline, font=tagline_font, fill=INK_DIM)
+    tag_y = 380
+    draw.text((right_edge - (tb2[2] - tb2[0]), tag_y - tb2[1]), tagline, font=tagline_font, fill=INK_DIM)
 
     tb3 = draw.textbbox((0, 0), credit, font=credit_font)
-    pad_x, pad_y = 28, 16
+    pad_x, pad_y = 30, 18
     bw, bh = (tb3[2] - tb3[0]) + pad_x * 2, (tb3[3] - tb3[1]) + pad_y * 2
     bx1 = right_edge - bw
-    by1 = 480
+    by1 = 460
     draw.rounded_rectangle([bx1, by1, bx1 + bw, by1 + bh], radius=bh // 2, fill=BG)
     draw.text((bx1 + pad_x, by1 + pad_y - tb3[1]), credit, font=credit_font, fill=(255, 255, 255))
 
