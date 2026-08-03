@@ -1,3 +1,5 @@
+var redisStats = require("./_redis");
+
 var ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 var MODEL = "claude-opus-5";
 
@@ -128,6 +130,21 @@ module.exports = async function (req, res) {
   if (input.is_food === false) {
     res.status(200).json({ ok: false, errorAr: "لم يتم التعرف على وجبة طعام في هذه الصورة. صوّر طبق الطعام بوضوح." });
     return;
+  }
+
+  // Anonymous usage counting only — no photos, no personal data. Never let
+  // this affect the real response even if the store isn't set up yet or errors.
+  if (redisStats.ready() && typeof body.deviceId === "string" && body.deviceId.length > 0 && body.deviceId.length < 100) {
+    var today = new Date().toISOString().slice(0, 10);
+    try {
+      await Promise.all([
+        redisStats.sadd("luqma:devices:tried", body.deviceId),
+        redisStats.sadd("luqma:device_days:" + body.deviceId, today),
+        redisStats.incr("luqma:stat:total_meals")
+      ]);
+    } catch (err) {
+      // ignore — analytics must never break the feature
+    }
   }
 
   res.status(200).json({

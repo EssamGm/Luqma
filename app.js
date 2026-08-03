@@ -17,6 +17,30 @@
   window.addEventListener("offline", updateOnlineStatus);
   updateOnlineStatus();
 
+  /* ---------------- Anonymous device id ----------------
+     Used only to count how many distinct devices tried the app and how many
+     came back on another day. No personal data, no name, nothing tied to
+     the meals themselves. */
+  function randomId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function getDeviceId() {
+    try {
+      var id = localStorage.getItem("luqma_device_id");
+      if (!id) {
+        id = randomId();
+        localStorage.setItem("luqma_device_id", id);
+      }
+      return id;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  var deviceId = getDeviceId();
+
   /* ---------------- IndexedDB helper ---------------- */
   var DB_NAME = "luqma-db";
   var DB_VERSION = 1;
@@ -189,7 +213,7 @@
         return fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64, mediaType: "image/jpeg" })
+          body: JSON.stringify({ image: base64, mediaType: "image/jpeg", deviceId: deviceId })
         });
       })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
