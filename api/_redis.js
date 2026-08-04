@@ -24,5 +24,6 @@ module.exports = {
   scard: function (key) { return command(["scard", key]); },
   smembers: function (key) { return command(["smembers", key]); },
   incr: function (key) { return command(["incr", key]); },
+  incrbyfloat: function (key, amount) { return command(["incrbyfloat", key, amount]); },
   get: function (key) { return command(["get", key]); }
 };

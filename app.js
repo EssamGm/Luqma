@@ -41,6 +41,45 @@
 
   var deviceId = getDeviceId();
 
+  /* ---------------- Wallet cost counter ----------------
+     Real per-device running total of what this device has actually cost in
+     Anthropic API spend, computed server-side from token usage on every
+     call and accumulated here. Persists in localStorage like the device id
+     above — no server round trip needed to display it. */
+  var walletCounter = document.getElementById("walletCounter");
+  var walletAmount = document.getElementById("walletAmount");
+  var walletPanel = document.getElementById("walletPanel");
+
+  function getCostTotal() {
+    try {
+      var v = parseFloat(localStorage.getItem("luqma_cost_sar"));
+      return isFinite(v) && v > 0 ? v : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function renderCostTotal(v) {
+    walletAmount.textContent = (v > 0 ? "-" + v.toFixed(2) : "0.00") + " ريال";
+  }
+
+  function addCost(sar) {
+    if (typeof sar !== "number" || !isFinite(sar) || sar <= 0) return;
+    var total = getCostTotal() + sar;
+    try { localStorage.setItem("luqma_cost_sar", String(total)); } catch (e) {}
+    renderCostTotal(total);
+    walletCounter.classList.remove("bump");
+    void walletCounter.offsetWidth;
+    walletCounter.classList.add("bump");
+  }
+
+  renderCostTotal(getCostTotal());
+
+  walletCounter.addEventListener("click", function () {
+    var open = walletPanel.classList.toggle("open");
+    walletCounter.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
   /* ---------------- IndexedDB helper ---------------- */
   var DB_NAME = "luqma-db";
   var DB_VERSION = 1;
@@ -218,6 +257,10 @@
       })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
+        // Any real model call costs money even when the result is "not food"
+        // or unclear, so the counter updates regardless of ok/not-ok below.
+        if (r.data) addCost(r.data.costSar);
+
         if (!r.ok || !r.data || r.data.ok === false) {
           var msg = (r.data && r.data.errorAr) || "حدث خطأ في الخادم، حاول لاحقاً. تواصل مع عصام لإصلاح الخطأ.";
           showTopLevelError(msg);
@@ -441,6 +484,7 @@
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (r) {
           summaryLoading.hidden = true;
+          if (r.data) addCost(r.data.costSar);
           if (!r.ok || !r.data || r.data.ok === false) {
             summaryError.hidden = false;
             summaryError.textContent = (r.data && r.data.errorAr) || "حدث خطأ في الخادم، حاول لاحقاً. تواصل مع عصام لإصلاح الخطأ.";

@@ -49,6 +49,7 @@ module.exports = async function (req, res) {
   var triedCount = 0;
   var returnedCount = 0;
   var totalMeals = 0;
+  var totalCostSar = 0;
 
   try {
     var members = (await redisStats.smembers("luqma:devices:tried")) || [];
@@ -61,6 +62,9 @@ module.exports = async function (req, res) {
 
     var totalRaw = await redisStats.get("luqma:stat:total_meals");
     totalMeals = parseInt(totalRaw, 10) || 0;
+
+    var totalCostRaw = await redisStats.get("luqma:stat:total_cost_sar");
+    totalCostSar = parseFloat(totalCostRaw) || 0;
   } catch (err) {
     res.setHeader("content-type", "text/html; charset=utf-8");
     res.status(200).end(page("<p>تعذر جلب الإحصائيات حالياً، حاول لاحقاً.</p>"));
@@ -68,7 +72,7 @@ module.exports = async function (req, res) {
   }
 
   if (req.query && req.query.format === "json") {
-    res.status(200).json({ triedCount: triedCount, returnedCount: returnedCount, totalMeals: totalMeals });
+    res.status(200).json({ triedCount: triedCount, returnedCount: returnedCount, totalMeals: totalMeals, totalCostSar: totalCostSar });
     return;
   }
 
@@ -76,6 +80,7 @@ module.exports = async function (req, res) {
     "<div class=\"card\"><span class=\"label\">أشخاص جرّبوا التطبيق</span><span class=\"num\">" + escapeHtml(triedCount) + "</span></div>" +
     "<div class=\"card\"><span class=\"label\">استمروا باستخدامه (أكثر من يوم)</span><span class=\"num\">" + escapeHtml(returnedCount) + "</span></div>" +
     "<div class=\"card\"><span class=\"label\">إجمالي الوجبات المحلَّلة</span><span class=\"num\">" + escapeHtml(totalMeals) + "</span></div>" +
+    "<div class=\"card\"><span class=\"label\">إجمالي التكلفة الفعلية</span><span class=\"num\">" + escapeHtml(totalCostSar.toFixed(2)) + " ريال</span></div>" +
     "<p class=\"note\">أرقام مجهولة تماماً — بدون أسماء أو صور أو أي بيانات شخصية، فقط عدد الأجهزة.</p>";
 
   res.setHeader("content-type", "text/html; charset=utf-8");

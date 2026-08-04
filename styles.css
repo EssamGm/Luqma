@@ -332,6 +332,97 @@ button:focus-visible, input:focus-visible {
 @keyframes bounce { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
 .summary-text { font-size: 14.5px; line-height: 1.75; margin: 0; }
 
+/* ---------- Wallet cost counter ---------- */
+.wallet-counter-wrap {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 190px;
+}
+
+.wallet-counter {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-icon-wrap {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wallet-icon { color: var(--ink-dim); }
+.bill {
+  position: absolute;
+  color: var(--bad);
+  opacity: 0;
+  animation: wc-fly 1.8s ease-out infinite;
+}
+.bill-1 { left: -3px; top: 1px; animation-delay: 0s; }
+.bill-2 { left: 5px; top: 5px; animation-delay: 0.6s; }
+.bill-3 { left: 1px; top: -3px; animation-delay: 1.2s; }
+@keyframes wc-fly {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(18px, -30px) rotate(20deg); }
+}
+
+.wallet-counter .amount {
+  font-family: var(--font-data);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bad);
+  font-variant-numeric: tabular-nums;
+}
+.wallet-counter .wlabel {
+  font-family: var(--font-ar);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+.wallet-counter.bump .amount { animation: wc-bump 0.4s ease; }
+@keyframes wc-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+.wallet-panel {
+  max-height: 0;
+  width: 100%;
+  overflow: hidden;
+  opacity: 0;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-dim);
+  text-align: right;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
+}
+.wallet-panel.open { max-height: 260px; opacity: 1; padding: 10px 12px; }
+
+@media (max-width: 380px) {
+  .wallet-counter-wrap { max-width: 150px; top: 10px; right: 10px; }
+}
+
 /* ---------- Footer ---------- */
 footer {
   text-align: center;

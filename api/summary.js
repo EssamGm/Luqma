@@ -1,3 +1,6 @@
+var redisStats = require("./_redis");
+var cost = require("./_cost");
+
 var ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 var MODEL = "claude-opus-5";
 
@@ -80,8 +83,19 @@ module.exports = async function (req, res) {
     return;
   }
 
+  // A real model call happened from here on — mirror the cost into the same
+  // global running total analyze.js contributes to. Best effort only.
+  var costSar = cost.sarFromUsage(data.usage);
+  if (costSar > 0 && redisStats.ready()) {
+    try {
+      await redisStats.incrbyfloat("luqma:stat:total_cost_sar", costSar);
+    } catch (err) {
+      // ignore — cost tracking must never break the feature
+    }
+  }
+
   if (data.stop_reason === "refusal") {
-    res.status(200).json({ ok: false, errorAr: "تعذر إجراء التحليل الشامل حالياً. حاول لاحقاً." });
+    res.status(200).json({ ok: false, errorAr: "تعذر إجراء التحليل الشامل حالياً. حاول لاحقاً.", costSar: costSar });
     return;
   }
 
@@ -92,9 +106,9 @@ module.exports = async function (req, res) {
   }
 
   if (!textBlock || !textBlock.text) {
-    res.status(200).json({ ok: false, errorAr: "تعذر إجراء التحليل الشامل حالياً. حاول لاحقاً." });
+    res.status(200).json({ ok: false, errorAr: "تعذر إجراء التحليل الشامل حالياً. حاول لاحقاً.", costSar: costSar });
     return;
   }
 
-  res.status(200).json({ ok: true, summaryAr: textBlock.text.trim() });
+  res.status(200).json({ ok: true, summaryAr: textBlock.text.trim(), costSar: costSar });
 };

@@ -1,4 +1,5 @@
 var redisStats = require("./_redis");
+var cost = require("./_cost");
 
 var ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 var MODEL = "claude-opus-5";
@@ -109,8 +110,21 @@ module.exports = async function (req, res) {
     return;
   }
 
+  // A real model call happened from here on (even a refusal or a "not food"
+  // result burned tokens), so this is real cost regardless of the outcome
+  // below. Mirror it into the global running total — best effort, must never
+  // affect the real response.
+  var costSar = cost.sarFromUsage(data.usage);
+  if (costSar > 0 && redisStats.ready()) {
+    try {
+      await redisStats.incrbyfloat("luqma:stat:total_cost_sar", costSar);
+    } catch (err) {
+      // ignore — cost tracking must never break the feature
+    }
+  }
+
   if (data.stop_reason === "refusal") {
-    res.status(200).json({ ok: false, errorAr: "الصورة غير واضحة. جرب صورة أوضح لوجبة الطعام." });
+    res.status(200).json({ ok: false, errorAr: "الصورة غير واضحة. جرب صورة أوضح لوجبة الطعام.", costSar: costSar });
     return;
   }
 
@@ -121,14 +135,14 @@ module.exports = async function (req, res) {
   }
 
   if (!toolUse || !toolUse.input) {
-    res.status(200).json({ ok: false, errorAr: "الصورة غير واضحة. جرب صورة أوضح لوجبة الطعام." });
+    res.status(200).json({ ok: false, errorAr: "الصورة غير واضحة. جرب صورة أوضح لوجبة الطعام.", costSar: costSar });
     return;
   }
 
   var input = toolUse.input;
 
   if (input.is_food === false) {
-    res.status(200).json({ ok: false, errorAr: "لم يتم التعرف على وجبة طعام في هذه الصورة. صوّر طبق الطعام بوضوح." });
+    res.status(200).json({ ok: false, errorAr: "لم يتم التعرف على وجبة طعام في هذه الصورة. صوّر طبق الطعام بوضوح.", costSar: costSar });
     return;
   }
 
@@ -155,6 +169,7 @@ module.exports = async function (req, res) {
     carbsG: input.carbs_g,
     fatG: input.fat_g,
     confidence: input.confidence,
-    adviceAr: input.advice_ar
+    adviceAr: input.advice_ar,
+    costSar: costSar
   });
 };
