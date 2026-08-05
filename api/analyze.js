@@ -65,9 +65,10 @@ module.exports = async function (req, res) {
   var payload = {
     model: MODEL,
     max_tokens: 2048,
-    // Trial: bumped from "low" to "medium" for 24h to see if users notice a
-    // quality difference. Revert to "low" once that check is done.
-    output_config: { effort: "medium" },
+    // Tried "medium" for 24h — it pushed some calls past Vercel's function
+    // timeout (no maxDuration was configured), surfacing as a generic server
+    // error for users. Back to "low"; see vercel.json for the timeout fix.
+    output_config: { effort: "low" },
     // The instructions + tool schema are identical on every call across every
     // device, so they go in `system` with a cache breakpoint instead of the
     // user turn — repeated analyses within the cache TTL can share the hit.
