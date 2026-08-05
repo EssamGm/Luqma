@@ -12,9 +12,11 @@ var PROMPT_AR =
   "إذا كانت الصورة تُظهر طعاماً فعلاً، اجعل is_food = true، ثم: حدّد اسم الطبق أو الوجبة " +
   "بالعربية الفصحى بإيجاز، وقدّر السعرات الحرارية، والبروتين، والكربوهيدرات، والدهون " +
   "بالجرام كأفضل تقدير ممكن كأعداد صحيحة. حدّد مستوى ثقتك بصدق (low أو medium أو high) " +
-  "حسب وضوح الصورة وقابلية التعرف على مكونات الوجبة. ثم اكتب نصيحة عملية قصيرة ومباشرة " +
-  "(جملة أو جملتين) خاصة بهذه الوجبة تحديداً بناءً على تركيبتها الغذائية — لا داعي " +
-  "للتحذيرات الطبية المبالغ فيها، فهذا معروف للمستخدم مسبقاً.";
+  "حسب وضوح الصورة وقابلية التعرف على مكونات الوجبة. اكتب أيضاً تفصيلاً موجزاً جداً " +
+  "لعناصر الوجبة الرئيسية وسعرات كل عنصر تقريبياً (مثال: أرز ~180، دجاج مشوي ~250، " +
+  "صلصة ~60) — فكّر في العناصر منفصلة قبل أن تجمعها في السعرات الإجمالية. ثم اكتب " +
+  "نصيحة عملية قصيرة ومباشرة (جملة أو جملتين) خاصة بهذه الوجبة تحديداً بناءً على " +
+  "تركيبتها الغذائية — لا داعي للتحذيرات الطبية المبالغ فيها، فهذا معروف للمستخدم مسبقاً.";
 
 var TOOL = {
   name: "record_meal_analysis",
@@ -30,9 +32,10 @@ var TOOL = {
       carbs_g: { type: "integer" },
       fat_g: { type: "integer" },
       confidence: { type: "string", enum: ["low", "medium", "high"] },
+      breakdown_ar: { type: "string", description: "تفصيل موجز جداً لعناصر الوجبة الرئيسية وسعرات كل عنصر تقريبياً، مثال: أرز ~180، دجاج مشوي ~250، صلصة ~60" },
       advice_ar: { type: "string", description: "نصيحة عملية قصيرة ومباشرة بالعربية الفصحى" }
     },
-    required: ["is_food", "dish_name_ar", "calories", "protein_g", "carbs_g", "fat_g", "confidence", "advice_ar"],
+    required: ["is_food", "dish_name_ar", "calories", "protein_g", "carbs_g", "fat_g", "confidence", "breakdown_ar", "advice_ar"],
     additionalProperties: false
   }
 };
@@ -62,15 +65,20 @@ module.exports = async function (req, res) {
   var payload = {
     model: MODEL,
     max_tokens: 2048,
-    output_config: { effort: "low" },
+    // Trial: bumped from "low" to "medium" for 24h to see if users notice a
+    // quality difference. Revert to "low" once that check is done.
+    output_config: { effort: "medium" },
+    // The instructions + tool schema are identical on every call across every
+    // device, so they go in `system` with a cache breakpoint instead of the
+    // user turn — repeated analyses within the cache TTL can share the hit.
+    system: [{ type: "text", text: PROMPT_AR, cache_control: { type: "ephemeral" } }],
     tools: [TOOL],
     tool_choice: { type: "tool", name: TOOL.name },
     messages: [
       {
         role: "user",
         content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
-          { type: "text", text: PROMPT_AR }
+          { type: "image", source: { type: "base64", media_type: mediaType, data: image } }
         ]
       }
     ]
@@ -135,6 +143,9 @@ module.exports = async function (req, res) {
   }
 
   if (!toolUse || !toolUse.input) {
+    if (redisStats.ready()) {
+      try { await redisStats.incr("luqma:stat:unclear_photos"); } catch (err) { /* ignore */ }
+    }
     res.status(200).json({ ok: false, errorAr: "الصورة غير واضحة. جرب صورة أوضح لوجبة الطعام.", costSar: costSar });
     return;
   }
@@ -142,6 +153,9 @@ module.exports = async function (req, res) {
   var input = toolUse.input;
 
   if (input.is_food === false) {
+    if (redisStats.ready()) {
+      try { await redisStats.incr("luqma:stat:not_food_photos"); } catch (err) { /* ignore */ }
+    }
     res.status(200).json({ ok: false, errorAr: "لم يتم التعرف على وجبة طعام في هذه الصورة. صوّر طبق الطعام بوضوح.", costSar: costSar });
     return;
   }
@@ -169,6 +183,7 @@ module.exports = async function (req, res) {
     carbsG: input.carbs_g,
     fatG: input.fat_g,
     confidence: input.confidence,
+    breakdownAr: input.breakdown_ar,
     adviceAr: input.advice_ar,
     costSar: costSar
   });

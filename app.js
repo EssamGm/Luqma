@@ -184,6 +184,8 @@
   var valCarbs = document.getElementById("valCarbs");
   var valFat = document.getElementById("valFat");
   var coachText = document.getElementById("coachText");
+  var breakdownNote = document.getElementById("breakdownNote");
+  var shareBtn = document.getElementById("shareBtn");
 
   var logEmpty = document.getElementById("logEmpty");
   var logDays = document.getElementById("logDays");
@@ -192,6 +194,42 @@
   var summaryLoading = document.getElementById("summaryLoading");
   var summaryText = document.getElementById("summaryText");
   var summaryError = document.getElementById("summaryError");
+
+  var goalSetPrompt = document.getElementById("goalSetPrompt");
+  var goalProgress = document.getElementById("goalProgress");
+  var goalCustomInput = document.getElementById("goalCustomInput");
+  var goalCustomBtn = document.getElementById("goalCustomBtn");
+  var goalEditBtn = document.getElementById("goalEditBtn");
+  var goalBarCalories = document.getElementById("goalBarCalories");
+  var goalBarProtein = document.getElementById("goalBarProtein");
+  var goalBarCarbs = document.getElementById("goalBarCarbs");
+  var goalBarFat = document.getElementById("goalBarFat");
+  var goalValCalories = document.getElementById("goalValCalories");
+  var goalValProtein = document.getElementById("goalValProtein");
+  var goalValCarbs = document.getElementById("goalValCarbs");
+  var goalValFat = document.getElementById("goalValFat");
+
+  var feedbackToggle = document.getElementById("feedbackToggle");
+  var feedbackForm = document.getElementById("feedbackForm");
+  var feedbackText = document.getElementById("feedbackText");
+  var feedbackSendBtn = document.getElementById("feedbackSendBtn");
+  var feedbackSent = document.getElementById("feedbackSent");
+
+  var currentMeal = null;
+
+  /* ---------------- Lightweight anonymous events ----------------
+     Fire-and-forget behavioral signals — no personal data, just a named
+     counter server-side. Must never block or affect the feature itself. */
+  function sendEvent(name) {
+    try {
+      var payload = JSON.stringify({ event: name, deviceId: deviceId });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/event", new Blob([payload], { type: "application/json" }));
+      } else {
+        fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true }).catch(function () {});
+      }
+    } catch (e) { /* ignore — analytics must never break the feature */ }
+  }
 
   var CONFIDENCE_LABEL = {
     high: "مستوى ثقة لُقْمَة في دقة التحليل: عالية",
@@ -280,6 +318,7 @@
           carbsG: meal.carbsG,
           fatG: meal.fatG,
           confidence: meal.confidence,
+          breakdownAr: meal.breakdownAr,
           adviceAr: meal.adviceAr,
           thumbnail: thumbDataUrl
         };
@@ -314,6 +353,7 @@
   }
 
   function renderResult(m) {
+    currentMeal = m;
     resultThumb.src = m.thumbnail;
     resultName.textContent = m.dishNameAr;
     resultConfidence.textContent = CONFIDENCE_LABEL[m.confidence] || "";
@@ -326,6 +366,9 @@
     valProtein.textContent = m.proteinG;
     valCarbs.textContent = m.carbsG;
     valFat.textContent = m.fatG;
+
+    breakdownNote.hidden = !m.breakdownAr;
+    breakdownNote.textContent = m.breakdownAr || "";
 
     coachText.textContent = m.adviceAr;
   }
@@ -390,6 +433,8 @@
 
         logDays.appendChild(section);
       });
+
+      renderGoalProgress(meals);
     });
   }
 
@@ -434,12 +479,106 @@
     del.textContent = "×";
     del.addEventListener("click", function (e) {
       e.stopPropagation();
+      if (Date.now() - m.timestamp < 10 * 60 * 1000) sendEvent("meal_deleted_soon");
       deleteMeal(m.id).then(refreshLog);
     });
     row.appendChild(del);
 
     return row;
   }
+
+  /* ---------------- Daily goal ---------------- */
+  var GOAL_PRESETS = {
+    cut: { calories: 1600, proteinG: 130, carbsG: 140, fatG: 53 },
+    maintain: { calories: 2000, proteinG: 120, carbsG: 220, fatG: 71 },
+    build: { calories: 2400, proteinG: 150, carbsG: 280, fatG: 76 }
+  };
+
+  function goalFromCalories(calories) {
+    return {
+      calories: calories,
+      proteinG: Math.round(calories * 0.30 / 4),
+      carbsG: Math.round(calories * 0.40 / 4),
+      fatG: Math.round(calories * 0.30 / 9)
+    };
+  }
+
+  function getGoal() {
+    try {
+      var raw = localStorage.getItem("luqma_goal");
+      if (!raw) return null;
+      var g = JSON.parse(raw);
+      if (g && typeof g.calories === "number" && g.calories > 0) return g;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setGoal(goal) {
+    try { localStorage.setItem("luqma_goal", JSON.stringify(goal)); } catch (e) {}
+  }
+
+  function clearGoal() {
+    try { localStorage.removeItem("luqma_goal"); } catch (e) {}
+  }
+
+  function todayTotals(meals) {
+    var today = new Date();
+    var todayStr = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
+    var t = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+    meals.forEach(function (m) {
+      if (m.day !== todayStr) return;
+      t.calories += m.calories;
+      t.proteinG += m.proteinG;
+      t.carbsG += m.carbsG;
+      t.fatG += m.fatG;
+    });
+    return t;
+  }
+
+  function setGoalRow(barEl, valEl, current, goal, unit) {
+    var pct = goal > 0 ? Math.min(100, Math.round(current / goal * 100)) : 0;
+    barEl.style.width = pct + "%";
+    valEl.textContent = current + " / " + goal + (unit ? " " + unit : "");
+  }
+
+  function renderGoalProgress(meals) {
+    var goal = getGoal();
+    if (!goal) {
+      goalSetPrompt.hidden = false;
+      goalProgress.hidden = true;
+      return;
+    }
+    goalSetPrompt.hidden = true;
+    goalProgress.hidden = false;
+    var totals = todayTotals(meals);
+    setGoalRow(goalBarCalories, goalValCalories, totals.calories, goal.calories, "سعرة");
+    setGoalRow(goalBarProtein, goalValProtein, totals.proteinG, goal.proteinG, "غ");
+    setGoalRow(goalBarCarbs, goalValCarbs, totals.carbsG, goal.carbsG, "غ");
+    setGoalRow(goalBarFat, goalValFat, totals.fatG, goal.fatG, "غ");
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".goal-preset-btn[data-preset]"), function (btn) {
+    btn.addEventListener("click", function () {
+      setGoal(GOAL_PRESETS[btn.getAttribute("data-preset")]);
+      getAllMeals().then(renderGoalProgress);
+    });
+  });
+
+  goalCustomBtn.addEventListener("click", function () {
+    var calories = parseInt(goalCustomInput.value, 10);
+    if (!calories || calories < 500 || calories > 6000) return;
+    setGoal(goalFromCalories(calories));
+    goalCustomInput.value = "";
+    getAllMeals().then(renderGoalProgress);
+  });
+
+  goalEditBtn.addEventListener("click", function () {
+    clearGoal();
+    goalSetPrompt.hidden = false;
+    goalProgress.hidden = true;
+  });
 
   /* ---------------- Aggregate summary ---------------- */
   summaryBtn.addEventListener("click", function () {
@@ -498,6 +637,150 @@
       summaryError.hidden = false;
       summaryError.textContent = "تعذر الاتصال بالخادم. تحقق من الاتصال بالإنترنت.";
     });
+  });
+
+  /* ---------------- Share card ----------------
+     Rendered entirely client-side with Canvas — no API call, no cost.
+     Handed to the Web Share API where available (native share sheet on
+     mobile), falling back to a plain download on desktop. */
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawImageCover(ctx, img, x, y, w, h) {
+    var iw = img.naturalWidth, ih = img.naturalHeight;
+    var scale = Math.max(w / iw, h / ih);
+    var dw = iw * scale, dh = ih * scale;
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  }
+
+  function wrapText(ctx, text, cx, y, maxWidth, lineHeight) {
+    var words = text.split(" ");
+    var line = "", lines = [];
+    for (var i = 0; i < words.length; i++) {
+      var test = line ? line + " " + words[i] : words[i];
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = words[i];
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    var startY = y - (lines.length - 1) * lineHeight / 2;
+    lines.forEach(function (l, idx) { ctx.fillText(l, cx, startY + idx * lineHeight); });
+  }
+
+  function drawShareCard(m) {
+    return document.fonts.ready.then(function () {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var W = 1080, H = 1350;
+            var canvas = document.createElement("canvas");
+            canvas.width = W;
+            canvas.height = H;
+            var ctx = canvas.getContext("2d");
+
+            ctx.fillStyle = "#f5f6f1";
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = "#e2a93a";
+            ctx.fillRect(0, 0, W, 18);
+
+            var photoSize = 640, photoX = (W - photoSize) / 2, photoY = 140;
+            ctx.save();
+            roundRectPath(ctx, photoX, photoY, photoSize, photoSize, 32);
+            ctx.clip();
+            drawImageCover(ctx, img, photoX, photoY, photoSize, photoSize);
+            ctx.restore();
+
+            ctx.direction = "rtl";
+            ctx.textAlign = "center";
+
+            ctx.fillStyle = "#20241d";
+            ctx.font = "700 56px Tajawal, sans-serif";
+            wrapText(ctx, m.dishNameAr, W / 2, photoY + photoSize + 90, W - 160, 64);
+
+            ctx.font = "800 84px Tajawal, sans-serif";
+            ctx.fillText(m.calories + " سعرة", W / 2, photoY + photoSize + 210);
+
+            ctx.font = "500 34px Tajawal, sans-serif";
+            ctx.fillStyle = "#5b6355";
+            ctx.fillText(
+              "بروتين " + m.proteinG + "غ   ·   كارب " + m.carbsG + "غ   ·   دهون " + m.fatG + "غ",
+              W / 2, photoY + photoSize + 280
+            );
+
+            ctx.font = "800 44px Tajawal, sans-serif";
+            ctx.fillStyle = "#c98a1f";
+            ctx.fillText("لُقْمَة", W / 2, H - 90);
+            ctx.font = "400 26px Tajawal, sans-serif";
+            ctx.fillStyle = "#8b9282";
+            ctx.fillText("صوّر وجبتك، واعرف ما فيها", W / 2, H - 50);
+
+            resolve(canvas);
+          } catch (e) { reject(e); }
+        };
+        img.onerror = reject;
+        img.src = m.thumbnail;
+      });
+    });
+  }
+
+  shareBtn.addEventListener("click", function () {
+    if (!currentMeal) return;
+    shareBtn.disabled = true;
+    drawShareCard(currentMeal).then(function (canvas) {
+      canvas.toBlob(function (blob) {
+        shareBtn.disabled = false;
+        if (!blob) return;
+        var file = new File([blob], "luqma.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: "لُقْمَة", text: currentMeal.dishNameAr }).catch(function () {});
+        } else {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = "luqma.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        }
+      }, "image/png");
+    }).catch(function () {
+      shareBtn.disabled = false;
+    });
+  });
+
+  /* ---------------- Feedback ---------------- */
+  feedbackToggle.addEventListener("click", function () {
+    feedbackForm.hidden = !feedbackForm.hidden;
+  });
+
+  feedbackSendBtn.addEventListener("click", function () {
+    var msg = feedbackText.value.trim();
+    if (!msg) return;
+    feedbackSendBtn.disabled = true;
+    fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg, deviceId: deviceId })
+    })
+      .then(function () {
+        feedbackText.value = "";
+        feedbackSent.hidden = false;
+        setTimeout(function () { feedbackForm.hidden = true; feedbackSent.hidden = true; }, 2500);
+      })
+      .catch(function () {})
+      .then(function () { feedbackSendBtn.disabled = false; });
   });
 
   /* ---------------- Init ---------------- */

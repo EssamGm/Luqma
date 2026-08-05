@@ -129,10 +129,70 @@ h1 {
   color: var(--ink-faint);
 }
 
-button:focus-visible, input:focus-visible {
+button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---------- Goal ---------- */
+.goal-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.goal-lead { font-size: 13.5px; color: var(--ink-dim); margin: 0 0 12px; }
+.goal-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.goal-custom-row { display: flex; gap: 8px; }
+.goal-custom-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-ar);
+  font-size: 14px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+}
+.goal-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.goal-edit-btn { padding: 4px 12px; font-size: 12.5px; }
+.goal-row { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 5px 0; }
+.goal-row .name { width: 82px; flex-shrink: 0; color: var(--ink-dim); }
+.goal-row .amount { font-family: var(--font-data); flex-shrink: 0; font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--ink-dim); }
+.bar-fill.accent { background: var(--accent); }
+
+/* ---------- Feedback ---------- */
+.feedback-section { text-align: center; margin-bottom: 20px; }
+.feedback-form {
+  margin-top: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: right;
+}
+.feedback-form textarea {
+  width: 100%;
+  font-family: var(--font-ar);
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.feedback-sent { font-size: 13px; color: var(--good); margin: 10px 0 0; }
 
 /* ---------- Stage (scan / result / error) ---------- */
 .stage {
@@ -218,6 +278,14 @@ button:focus-visible, input:focus-visible {
 .bar-fill.fat { background: var(--bad); }
 .macro-row .amount { font-family: var(--font-data); width: 54px; text-align: left; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
+.breakdown-note {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  font-family: var(--font-data);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
 .coach {
   background: var(--bg);
   border: 1px solid var(--line);
@@ -229,7 +297,9 @@ button:focus-visible, input:focus-visible {
 }
 .coach strong { color: var(--accent-ink); background: var(--accent); padding: 1px 6px; border-radius: 5px; }
 
-.again-btn, .summary-btn {
+.result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.again-btn, .summary-btn, .share-btn, .goal-preset-btn, .goal-edit-btn, .feedback-toggle {
   font-family: var(--font-ar);
   font-size: 14px;
   font-weight: 700;
@@ -241,7 +311,8 @@ button:focus-visible, input:focus-visible {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.again-btn:hover, .summary-btn:hover { border-color: var(--accent); color: var(--ink); }
+.again-btn:hover, .summary-btn:hover, .share-btn:hover, .goal-preset-btn:hover, .feedback-toggle:hover { border-color: var(--accent); color: var(--ink); }
+.share-btn { color: var(--accent-ink); border-color: var(--accent); background: var(--warn-bg); }
 
 .error-box {
   text-align: center;

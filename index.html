@@ -88,6 +88,47 @@
       <p class="capture-hint" id="captureHint">اضغط لالتقاط صورة الوجبة</p>
     </section>
 
+    <section class="goal-card" id="goalCard">
+      <div class="goal-set-prompt" id="goalSetPrompt">
+        <p class="goal-lead">حدد هدفك اليومي لتتابع مدى اقترابك منه.</p>
+        <div class="goal-presets">
+          <button type="button" class="goal-preset-btn" data-preset="cut">قطع دهون</button>
+          <button type="button" class="goal-preset-btn" data-preset="maintain">ثبات الوزن</button>
+          <button type="button" class="goal-preset-btn" data-preset="build">بناء عضلي</button>
+        </div>
+        <div class="goal-custom-row">
+          <input type="number" inputmode="numeric" id="goalCustomInput" placeholder="أو أدخل سعرات مخصصة" />
+          <button type="button" class="goal-preset-btn" id="goalCustomBtn">تحديد</button>
+        </div>
+      </div>
+      <div class="goal-progress" id="goalProgress" hidden>
+        <div class="goal-progress-head">
+          <span>هدفك اليوم</span>
+          <button type="button" class="goal-edit-btn" id="goalEditBtn">تغيير</button>
+        </div>
+        <div class="goal-row">
+          <span class="name">السعرات</span>
+          <div class="macro-bar"><div id="goalBarCalories" class="bar-fill accent"></div></div>
+          <span class="amount" id="goalValCalories"></span>
+        </div>
+        <div class="goal-row">
+          <span class="name">البروتين</span>
+          <div class="macro-bar"><div id="goalBarProtein" class="bar-fill protein"></div></div>
+          <span class="amount" id="goalValProtein"></span>
+        </div>
+        <div class="goal-row">
+          <span class="name">الكربوهيدرات</span>
+          <div class="macro-bar"><div id="goalBarCarbs" class="bar-fill carbs"></div></div>
+          <span class="amount" id="goalValCarbs"></span>
+        </div>
+        <div class="goal-row">
+          <span class="name">الدهون</span>
+          <div class="macro-bar"><div id="goalBarFat" class="bar-fill fat"></div></div>
+          <span class="amount" id="goalValFat"></span>
+        </div>
+      </div>
+    </section>
+
     <section class="stage" id="stage" hidden aria-live="polite">
       <div class="scan-row" id="scanRow">
         <div class="scan-thumb-wrap">
@@ -132,12 +173,17 @@
           </div>
         </div>
 
+        <p class="breakdown-note" id="breakdownNote"></p>
+
         <div class="coach">
           <strong>نصيحة سريعة —</strong>
           <span id="coachText"></span>
         </div>
 
-        <button type="button" class="again-btn" id="againBtn">صوّر وجبة أخرى</button>
+        <div class="result-actions">
+          <button type="button" class="again-btn" id="againBtn">صوّر وجبة أخرى</button>
+          <button type="button" class="share-btn" id="shareBtn">مشاركة</button>
+        </div>
       </div>
 
       <div class="error-box" id="errorBox" hidden>
@@ -162,6 +208,15 @@
       </div>
       <p class="summary-text" id="summaryText" hidden></p>
       <p class="error-box inline" id="summaryError" hidden></p>
+    </section>
+
+    <section class="feedback-section">
+      <button type="button" class="feedback-toggle" id="feedbackToggle">أرسل ملاحظة لعصام</button>
+      <div class="feedback-form" id="feedbackForm" hidden>
+        <textarea id="feedbackText" rows="3" placeholder="أي شيء تحب تقوله — ملاحظة، اقتراح، أو مشكلة واجهتك"></textarea>
+        <button type="button" class="again-btn" id="feedbackSendBtn">إرسال</button>
+        <p class="feedback-sent" id="feedbackSent" hidden>وصلت! شكراً لوقتك.</p>
+      </div>
     </section>
   </main>
 
